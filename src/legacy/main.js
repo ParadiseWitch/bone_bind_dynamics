@@ -5,7 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { CSS2DRenderer, CSS2DObject } from 'three/examples/jsm/renderers/CSS2DRenderer.js';
 
 /**
- * 物理引擎管理器
+ * 旧版实验入口里使用的物理引擎管理器。
  */
 class PhysicsWorld {
   constructor() {
@@ -17,7 +17,7 @@ class PhysicsWorld {
     const gravity = { x: 0.0, y: -9.81, z: 0.0 };
     this.world = new RAPIER.World(gravity);
 
-    // 创建物理地面
+    // 创建物理地面。
     const groundDesc = RAPIER.ColliderDesc.cuboid(25, 0.1, 25)
       .setTranslation(0, -0.1, 0);
     this.world.createCollider(groundDesc);
@@ -29,7 +29,7 @@ class PhysicsWorld {
 }
 
 /**
- * 布娃娃管理器：处理 Three.js 骨骼与 Rapier 刚体的映射与同步
+ * 旧版布娃娃实现：处理 Three.js 骨骼与 Rapier 刚体的映射与同步。
  */
 class Ragdoll {
   constructor(model, physicsWorld, scene) {
@@ -38,7 +38,7 @@ class Ragdoll {
     this.scene = scene;
     this.bonesMap = [];
 
-    // 预分配用于同步的临时对象，减少 GC
+    // 预分配用于同步的临时对象，减少 GC。
     this._tempVec = new THREE.Vector3();
     this._tempQuat = new THREE.Quaternion();
     this._tempMat = new THREE.Matrix4();
@@ -53,7 +53,7 @@ class Ragdoll {
 
     this.model.updateMatrixWorld(true);
 
-    // 1. 创建刚体
+    // 1. 创建刚体。
     this.model.traverse(child => {
       const isLikelyBone = child.isBone || (child.isObject3D && !child.isMesh && !child.isLight && !child.isCamera && child.name.toLowerCase().includes('bone'));
       const isArmatureChild = child.parent && (child.parent.name.toLowerCase().includes('armature') || child.parent.name.includes('骨骼'));
@@ -63,7 +63,7 @@ class Ragdoll {
       }
     });
 
-    // 2. 建立约束
+    // 2. 建立约束。
     this._setupConstraints();
   }
 
@@ -75,6 +75,7 @@ class Ragdoll {
   _createBonePhysics(bone) {
     const name = bone.name;
 
+    // 同一根骨骼只创建一次刚体与标签。
     if (this.bonesMap.find(e => e.bone === bone)) return;
 
     const worldPos = new THREE.Vector3();
@@ -106,6 +107,7 @@ class Ragdoll {
       }
     }
 
+    // 根据骨骼朝向和长度估算刚体中心点。
     const halfLength = length * 0.5;
     const localOffset = direction.clone().multiplyScalar(halfLength);
     const worldOffset = localOffset.clone().applyQuaternion(worldQuat);
@@ -119,6 +121,7 @@ class Ragdoll {
 
     const body = this.physicsWorld.world.createRigidBody(rbDesc);
 
+    // 用一个近似的盒状碰撞体包住骨骼段。
     const size = Math.max(0.02, Math.min(halfLength, 0.4));
     const hx = Math.abs(direction.x) > 0.5 ? size : 0.04;
     const hy = Math.abs(direction.y) > 0.5 ? size : 0.04;
@@ -127,6 +130,7 @@ class Ragdoll {
     const colDesc = RAPIER.ColliderDesc.cuboid(hx, hy, hz);
     this.physicsWorld.world.createCollider(colDesc, body);
 
+    // 为调试方便，给每段骨骼显示一个 2D 标签。
     const labelDiv = document.createElement('div');
     labelDiv.className = 'bone-label';
     labelDiv.textContent = name;
@@ -148,6 +152,7 @@ class Ragdoll {
   }
 
   _setupConstraints() {
+    // 根据骨骼父子关系建立球形关节。
     this.bonesMap.forEach(entry => {
       const bone = entry.bone;
       const parent = bone.parent;
@@ -174,6 +179,7 @@ class Ragdoll {
   }
 
   update() {
+    // 将刚体姿态反向同步回骨骼层级。
     this.model.updateMatrixWorld();
 
     this.bonesMap.forEach(({ bone, body, offset, label }) => {
@@ -208,7 +214,7 @@ class Ragdoll {
 }
 
 /**
- * 演示应用主类
+ * 旧版演示应用主类。
  */
 class App {
   constructor() {
@@ -227,11 +233,13 @@ class App {
     this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
     this.camera.position.set(10, 10, 15);
 
+    // WebGL 渲染器负责真实场景渲染。
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.shadowMap.enabled = true;
     document.body.appendChild(this.renderer.domElement);
 
+    // CSS2D 渲染器用于绘制骨骼名称标签。
     this.labelRenderer = new CSS2DRenderer();
     this.labelRenderer.setSize(window.innerWidth, window.innerHeight);
     this.labelRenderer.domElement.style.position = 'absolute';
@@ -245,6 +253,7 @@ class App {
 
     window.addEventListener('resize', () => this._onResize());
 
+    // 网格辅助线方便观察角色落点和朝向。
     this.scene.add(new THREE.GridHelper(50, 25, 0x888888, 0x444444));
   }
 
@@ -261,6 +270,7 @@ class App {
     dir.shadow.camera.bottom = -20;
     this.scene.add(dir);
 
+    // 可视地面与物理地面分开维护。
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(50, 50),
       new THREE.MeshStandardMaterial({ color: 0x444444 })
@@ -293,6 +303,7 @@ class App {
       this.ragdoll = new Ragdoll(model, this.physics, this.scene);
       this.ragdoll.init();
 
+      // 骨架辅助器仅用于调试查看骨骼层级。
       this.scene.add(new THREE.SkeletonHelper(model));
 
       this._animate();
@@ -322,4 +333,5 @@ class App {
   }
 }
 
+// 旧版示例入口。
 new App().start();

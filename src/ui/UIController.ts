@@ -14,6 +14,7 @@ type UIControllerOptions = {
   onToggleDebugPhysics: (visible: boolean) => void;
 };
 
+// 统一封装 tweakpane 和 stats，避免主入口直接操作 UI 细节。
 export class UIController {
   readonly params: UIParams;
 
@@ -35,6 +36,7 @@ export class UIController {
       options.onToggleDebugPhysics(ev.value);
     });
 
+    // 监视项直接绑定到共享状态对象，主循环只负责更新值。
     this.pane.addBinding(this.params, 'rigidBodyCount', { disabled: true, step: 1 });
     this.pane.addBinding(this.params, 'gravity', {
       step: 0.1,
@@ -57,6 +59,7 @@ export class UIController {
   }
 
   refresh() {
+    // 强制刷新面板，确保监视值与本帧状态一致。
     this.pane.refresh();
   }
 }

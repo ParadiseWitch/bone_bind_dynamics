@@ -3,6 +3,7 @@ import { Scene } from 'three';
 import { DRACOLoader, GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Ragdoll } from './Ragdoll';
 
+// 管理多个布娃娃实例及其共享资源。
 export class RagdollManager {
   private readonly ragdolls: Ragdoll[] = [];
   private readonly loader: GLTFLoader;
@@ -20,10 +21,12 @@ export class RagdollManager {
   }
 
   addRagdoll() {
+    // 新布娃娃共享同一个加载器与物理世界，但各自拥有独立刚体。
     this.ragdolls.push(new Ragdoll(this.world, this.scene, this.loader));
   }
 
   update(delta: number) {
+    // 逐个把物理结果写回对应角色骨骼。
     for (const ragdoll of this.ragdolls) {
       ragdoll.update(delta);
     }

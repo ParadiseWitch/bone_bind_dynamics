@@ -7,6 +7,7 @@ type RagdollParts = 'head' | 'torso' | 'armUpperRight' | 'armLowerRight' | 'armU
 /**
  * 原始演示地址：https://mavon.ie/demos/rapierjs-ragdoll
  */
+// 单个布娃娃实例，负责角色模型、刚体与骨骼同步。
 export class Ragdoll extends Object3D {
   world: World;
 
@@ -106,6 +107,7 @@ export class Ragdoll extends Object3D {
 
     const initialSpawn = new Vector3(0, 10, 0);
 
+    // 先创建躯干，其他部位的位置都以它为参考。
     const torsoDesc = RAPIER.ColliderDesc.cuboid(torsoWidth / 2, torsoHeight / 2, 0.1);
     const torsoBodyDesc = RAPIER.RigidBodyDesc.dynamic().setTranslation(...initialSpawn.toArray());
     this.torso = this.world.createRigidBody(torsoBodyDesc);
@@ -192,6 +194,7 @@ export class Ragdoll extends Object3D {
     const localAnchorLLegUpperLower = { x: 0, y: -legSegmentHeight / 2 - stiffness, z: 0 };
     const localAnchorLLegLowerTop = { x: 0, y: legSegmentHeight / 2, z: 0 };
 
+    // 使用球形关节连接身体各部位，让模型能自由摆动。
     const createJoint = (anchor1: RAPIER.Vector, anchor2: RAPIER.Vector, parent1: RAPIER.RigidBody, parent2: RAPIER.RigidBody) => {
       const joint = RAPIER.JointData.spherical(anchor1, anchor2);
       this.world.createImpulseJoint(joint, parent1, parent2, true);
@@ -218,6 +221,7 @@ export class Ragdoll extends Object3D {
   public update(_delta: number) {
     if (!this.mesh) return;
 
+    // 将每个刚体的世界位姿换算回对应骨骼的局部位姿。
     for (const [key, boneName] of Object.entries(Ragdoll.boneMapping)) {
       const bone = this.mesh.getObjectByName(boneName);
       const body = this[key as RagdollParts];
@@ -231,6 +235,7 @@ export class Ragdoll extends Object3D {
 
         const parent = bone.parent as Object3D;
         if (parent) {
+          // 位置先从世界空间转换回父骨骼局部空间。
           parent.worldToLocal(bodyPos);
           bone.position.copy(bodyPos);
 
@@ -239,6 +244,7 @@ export class Ragdoll extends Object3D {
 
           const initialQuat = this.initialBoneWorldQuaternions.get(boneName);
           if (initialQuat) {
+            // 使用初始骨骼姿态修正建模朝向差异。
             const relativeQuat = bodyQuat.multiply(initialQuat);
             bone.quaternion.copy(parentQuat.invert()).multiply(relativeQuat);
           } else {
