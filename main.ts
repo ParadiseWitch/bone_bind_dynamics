@@ -10,7 +10,7 @@ import { Pane } from 'tweakpane';
 import RAPIER, { World } from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-// import { RapierDebugRenderer } from './DebugRenderer';
+import { RapierDebugRenderer } from './DebugRenderer';
 import { Ragdoll } from './Ragdoll';
 
 const scene = new THREE.Scene();
@@ -57,7 +57,7 @@ const PARAMS = {
 
 await RAPIER.init()
 const world = new World({ x: 0, y: PARAMS.gravity, z: 0 })
-// const rapierDebugRender = new RapierDebugRenderer(scene, world, PARAMS.debugPhysics)
+const rapierDebugRender = new RapierDebugRenderer(scene, world, PARAMS.debugPhysics)
 
 const physicsPlane = RAPIER.ColliderDesc.cuboid(10, 0.2, 10);
 const physicsPlaneDesc = RAPIER.RigidBodyDesc.fixed();
@@ -79,7 +79,7 @@ const btn = pane.addButton({
   label: '',   // optional
 });
 
-// pane.addBinding(PARAMS, 'debugPhysics').on('change', (ev) => rapierDebugRender.toggleVisible(ev.value))
+pane.addBinding(PARAMS, 'debugPhysics').on('change', (ev) => rapierDebugRender.toggleVisible(ev.value))
 btn.on('click', () => {
   ragdolls.push(new Ragdoll(world, scene, loader))
 });
@@ -110,7 +110,7 @@ function animate() {
   world.gravity = new RAPIER.Vector3(0, PARAMS.gravity, 0);
   world.step()
   ragdolls.forEach(ragdoll => ragdoll.update(timer.getDelta()))
-  // rapierDebugRender.update()
+  rapierDebugRender.update()
   orbitControls.update(timer.getDelta())
 
   renderer.render(scene, camera);
