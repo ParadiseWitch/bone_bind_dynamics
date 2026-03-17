@@ -1,6 +1,6 @@
 import { World } from '@dimforge/rapier3d-compat';
 import { Scene } from 'three';
-import { DRACOLoader, GLTFLoader } from 'three/examples/jsm/Addons.js';
+import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 import { Ragdoll } from './Ragdoll';
 
 // 管理多个布娃娃实例及其共享资源。
@@ -14,10 +14,6 @@ export class RagdollManager {
   ) {
     // 统一在管理器内部准备角色模型加载器，避免 main.ts 关心布娃娃资源细节。
     this.loader = new GLTFLoader();
-
-    const dracoLoader = new DRACOLoader();
-    dracoLoader.setDecoderPath('https://raw.githubusercontent.com/google/draco/refs/heads/main/javascript/');
-    this.loader.setDRACOLoader(dracoLoader);
   }
 
   addRagdoll() {

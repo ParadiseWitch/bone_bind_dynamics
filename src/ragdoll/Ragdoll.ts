@@ -9,6 +9,8 @@ type RagdollParts = 'head' | 'torso' | 'armUpperRight' | 'armLowerRight' | 'armU
  */
 // 单个布娃娃实例，负责角色模型、刚体与骨骼同步。
 export class Ragdoll extends Object3D {
+  private static readonly modelUrl = new URL('../../assets/character.glb', import.meta.url).href;
+
   world: World;
 
   head!: RAPIER.RigidBody;
@@ -45,7 +47,7 @@ export class Ragdoll extends Object3D {
 
     // 加载角色 glTF 资源。
     loader.load(
-      './assets/character.glb',
+      Ragdoll.modelUrl,
       (glTF) => {
         glTF.scene.traverse(o => {
           if (o instanceof Mesh) {
