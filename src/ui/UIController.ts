@@ -12,6 +12,12 @@ type UIControllerOptions = {
   params: UIParams;
   onAddRagdoll: () => void;
   onToggleClaw: () => void;
+  onRaiseClaw: () => void;
+  onLowerClaw: () => void;
+  onMoveClawUp: () => void;
+  onMoveClawDown: () => void;
+  onMoveClawLeft: () => void;
+  onMoveClawRight: () => void;
   onToggleDebugPhysics: (visible: boolean) => void;
 };
 
@@ -37,6 +43,36 @@ export class UIController {
       title: 'Toggle Claw',
       label: '',
     }).on('click', options.onToggleClaw);
+
+    this.pane.addButton({
+      title: 'Raise Claw',
+      label: '',
+    }).on('click', options.onRaiseClaw);
+
+    this.pane.addButton({
+      title: 'Lower Claw',
+      label: '',
+    }).on('click', options.onLowerClaw);
+
+    this.pane.addButton({
+      title: 'Claw Up',
+      label: '',
+    }).on('click', options.onMoveClawUp);
+
+    this.pane.addButton({
+      title: 'Claw Down',
+      label: '',
+    }).on('click', options.onMoveClawDown);
+
+    this.pane.addButton({
+      title: 'Claw Left',
+      label: '',
+    }).on('click', options.onMoveClawLeft);
+
+    this.pane.addButton({
+      title: 'Claw Right',
+      label: '',
+    }).on('click', options.onMoveClawRight);
 
     this.pane.addBinding(this.params, 'debugPhysics').on('change', (ev) => {
       options.onToggleDebugPhysics(ev.value);
