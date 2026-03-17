@@ -34,7 +34,8 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Install Dependencies
-        run: npm ci
+        # npm ci 在 GitHub Actions 上偶发漏装 Rollup 的可选原生包，改用 npm install 规避。
+        run: npm install
 
       - name: Build
         run: npm run build
