@@ -11,6 +11,7 @@ export type UIParams = {
 type UIControllerOptions = {
   params: UIParams;
   onAddRagdoll: () => void;
+  onToggleClaw: () => void;
   onToggleDebugPhysics: (visible: boolean) => void;
 };
 
@@ -31,6 +32,11 @@ export class UIController {
       title: 'Add Ragdoll',
       label: '',
     }).on('click', options.onAddRagdoll);
+
+    this.pane.addButton({
+      title: 'Toggle Claw',
+      label: '',
+    }).on('click', options.onToggleClaw);
 
     this.pane.addBinding(this.params, 'debugPhysics').on('change', (ev) => {
       options.onToggleDebugPhysics(ev.value);

@@ -6,6 +6,7 @@ import { OrbitControls, Sky, Timer } from 'three/examples/jsm/Addons.js';
 import './style.css';
 import RAPIER, { World } from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
+import { ClawController } from './claw/ClawController';
 import { RapierDebugRenderer } from './physics/DebugRenderer';
 import { RagdollManager } from './ragdoll/RagdollManager';
 import { UIController } from './ui/UIController';
@@ -75,11 +76,13 @@ async function bootstrap() {
   // 布娃娃管理器只负责创建和逐帧同步布娃娃实体。
   const ragdollManager = new RagdollManager(world, scene);
   ragdollManager.addRagdoll();
+  const clawController = await ClawController.create(scene);
 
   // UI 控制器统一管理面板、性能面板以及相关回调。
   const ui = new UIController({
     params: PARAMS,
     onAddRagdoll: () => ragdollManager.addRagdoll(),
+    onToggleClaw: () => clawController.toggle(),
     onToggleDebugPhysics: (visible) => rapierDebugRender.toggleVisible(visible),
   });
 
@@ -97,6 +100,7 @@ async function bootstrap() {
     ragdollManager.update(timer.getDelta());
     rapierDebugRender.update();
     orbitControls.update(timer.getDelta());
+    clawController.update(timer.getDelta());
 
     renderer.render(scene, camera);
 
