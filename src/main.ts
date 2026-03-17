@@ -82,31 +82,31 @@ async function bootstrap() {
   const ui = new UIController({
     params: PARAMS,
     onAddRagdoll: () => ragdollManager.addRagdoll(),
-    onToggleClaw: () => clawController.toggle(),
-    onRaiseClaw: () => clawController.raise(),
-    onLowerClaw: () => clawController.lower(),
-    onMoveClawUp: () => clawController.moveUp(),
-    onMoveClawDown: () => clawController.moveDown(),
-    onMoveClawLeft: () => clawController.moveLeft(),
-    onMoveClawRight: () => clawController.moveRight(),
+    onGrabClaw: () => clawController.grab(),
+    onMoveClawForward: (delta) => clawController.moveForward(delta),
+    onMoveClawBackward: (delta) => clawController.moveBackward(delta),
+    onMoveClawLeft: (delta) => clawController.moveLeft(delta),
+    onMoveClawRight: (delta) => clawController.moveRight(delta),
     onToggleDebugPhysics: (visible) => rapierDebugRender.toggleVisible(visible),
   });
 
   function animate() {
     // 先采样帧时间，再更新监控面板显示值。
     timer.update();
+    const delta = timer.getDelta();
     ui.beginFrame();
     PARAMS.rigidBodyCount = world.bodies.len();
     PARAMS.ragdollsCount = ragdollManager.getCount();
 
     ui.refresh();
+    ui.update(delta);
 
-    clawController.update(timer.getDelta());
+    clawController.update(delta);
     world.gravity = new RAPIER.Vector3(0, PARAMS.gravity, 0);
     world.step();
-    ragdollManager.update(timer.getDelta());
+    ragdollManager.update(delta);
     rapierDebugRender.update();
-    orbitControls.update(timer.getDelta());
+    orbitControls.update(delta);
 
     renderer.render(scene, camera);
 
