@@ -37,6 +37,10 @@ jobs:
         # npm ci 在 GitHub Actions 上偶发漏装 Rollup 的可选原生包，改用 npm install 规避。
         run: npm install
 
+      - name: Install Rollup Linux Binary
+        # 显式补装 Linux runner 需要的 Rollup 原生包，绕过 npm 可选依赖漏装问题。
+        run: npm install @rollup/rollup-linux-x64-gnu --no-save
+
       - name: Build
         run: npm run build
 
