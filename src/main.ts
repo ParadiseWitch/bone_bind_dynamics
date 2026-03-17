@@ -3,7 +3,7 @@
  */
 
 import { OrbitControls, Sky, Timer } from 'three/examples/jsm/Addons.js';
-import './styles/style.css';
+import './style.css';
 import RAPIER, { World } from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
 import { RapierDebugRenderer } from './physics/DebugRenderer';
