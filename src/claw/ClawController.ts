@@ -3,17 +3,23 @@ import RAPIER, { World } from '@dimforge/rapier3d-compat';
 import { GLTFLoader } from 'three/examples/jsm/Addons.js';
 
 const CLAW_NODE_NAMES = ['1', '2', '3'] as const;
+// 爪指完全闭合时的旋转角度。
 const CLAW_CLOSE_ANGLE = THREE.MathUtils.degToRad(38);
+// 模型缩放后的目标高度。
 const CLAW_TARGET_HEIGHT = 1.6;
+// 让模型底部略微离开地面，避免视觉穿插。
 const CLAW_GROUND_OFFSET = 0.02;
 const CLAW_MOVE_SPEED = 1.8;
 const CLAW_HOME_HEIGHT = 2.35;
 const CLAW_HOME_POSITION = new THREE.Vector3(0, CLAW_HOME_HEIGHT, 0);
+// 抓取下落时允许到达的最低高度。
 const CLAW_MIN_GRAB_HEIGHT = 0.72;
 const CLAW_GRAB_DROP_DISTANCE = 1.45;
+// 抓取流程中移动速度更“钝化”，减少剧烈位移。
 const CLAW_GRAB_TRAVEL_DAMPING = 3.2;
 const CLAW_POSE_DAMPING = 10;
 const CLAW_POSITION_DAMPING = 8;
+// 以此前缀命名的网格只用于物理碰撞，不参与可视渲染。
 const CLAW_COLLIDER_NODE_PREFIX = 'b_';
 const CLAW_MATERIAL = new THREE.MeshStandardMaterial({
   color: '#8f98a3',
@@ -21,6 +27,7 @@ const CLAW_MATERIAL = new THREE.MeshStandardMaterial({
   roughness: 0.28,
 });
 
+// 抓取状态机：张开 -> 下落 -> 闭合 -> 上升 -> 回原点。
 enum GrabPhase {
   Idle,
   Opening,
@@ -67,6 +74,7 @@ export class ClawController {
   }
 
   static async create(scene: THREE.Scene, world: World) {
+    // 加载钩爪模型，并区分可见网格与仅用于碰撞的隐藏网格。
     const gltfLoader = new GLTFLoader();
     const clawGltf = await gltfLoader.loadAsync(new URL('../../assets/钩爪.glb', import.meta.url).href);
     const clawRoot = clawGltf.scene;
@@ -93,12 +101,14 @@ export class ClawController {
     clawRoot.updateMatrixWorld(true);
     const clawBounds = new THREE.Box3().setFromObject(clawRoot);
     const clawSize = clawBounds.getSize(new THREE.Vector3());
+    // 将模型统一缩放到预期高度，避免资源尺寸变化影响玩法。
     const scaleFactor = CLAW_TARGET_HEIGHT / Math.max(clawSize.y, 0.001);
     clawRoot.scale.setScalar(scaleFactor);
     clawRoot.updateMatrixWorld(true);
 
     const scaledClawBounds = new THREE.Box3().setFromObject(clawRoot);
     const clawCenter = scaledClawBounds.getCenter(new THREE.Vector3());
+    // 将模型底部对齐到目标高度附近，并让中心落在场景原点上方。
     clawRoot.position.set(-clawCenter.x, CLAW_GROUND_OFFSET - scaledClawBounds.min.y, -clawCenter.z);
     scene.add(clawRoot);
 
@@ -107,6 +117,7 @@ export class ClawController {
       .filter((node): node is ClawNode => Boolean(node));
 
     clawNodes.forEach((node) => {
+      // 记录张开状态的初始姿态，后续每帧都从这个姿态插值闭合。
       node.userData.openQuaternion = node.quaternion.clone();
     });
 
@@ -154,11 +165,13 @@ export class ClawController {
       return;
     }
 
+    // 启动一次完整抓取流程，先张开爪子再开始下落。
     this.phase = GrabPhase.Opening;
     this.gripTarget = 0;
   }
 
   update(delta: number) {
+    // 先推进抓取状态机，再对位置和姿态做阻尼插值。
     this.updateGrabSequence();
     const positionDamping = this.isIdle() ? CLAW_POSITION_DAMPING : CLAW_GRAB_TRAVEL_DAMPING;
     this.gripProgress = THREE.MathUtils.damp(this.gripProgress, this.gripTarget, CLAW_POSE_DAMPING, delta);
@@ -171,6 +184,7 @@ export class ClawController {
     this.root.updateMatrixWorld(true);
 
     for (const physicsPart of this.physicsParts) {
+      // 将可视模型节点的世界变换同步到 Rapier 的运动学刚体。
       physicsPart.source.getWorldQuaternion(this.tempQuaternion);
       physicsPart.source.getWorldPosition(this.tempPosition);
       physicsPart.source.getWorldScale(this.tempScale);
@@ -197,6 +211,7 @@ export class ClawController {
       return;
     }
 
+    // 各阶段只在接近目标值时切换，避免因阻尼运动造成状态跳变。
     switch (this.phase) {
       case GrabPhase.Opening:
         if (!this.isGripNear(0)) {
@@ -252,6 +267,7 @@ export class ClawController {
         return;
       }
 
+      // 每帧从张开姿态重置，再叠加闭合角度，避免误差累积。
       node.quaternion.copy(openQuaternion);
       node.rotateX(CLAW_CLOSE_ANGLE * this.gripProgress);
     });
@@ -288,6 +304,7 @@ export class ClawController {
     const localCenter = bounds.getCenter(new THREE.Vector3());
     const localSize = bounds.getSize(new THREE.Vector3());
     const worldScale = source.getWorldScale(new THREE.Vector3());
+    // 基于网格包围盒创建简单盒碰撞体，兼顾性能与足够稳定的抓取效果。
     const halfExtents = localSize.multiply(worldScale).multiplyScalar(0.5);
     const position = new THREE.Vector3();
     const quaternion = new THREE.Quaternion();
